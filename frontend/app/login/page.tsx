@@ -3,8 +3,13 @@
 import {useState} from "react";
 import Link from "next/link";
 import {loginUser} from "@/app/lib/api";
+import {supabase} from "@/app/lib/supabaseClient";
+import {useRouter} from "next/navigation";
+
 
 export default function LoginPage() {
+    const router = useRouter();
+
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
@@ -15,13 +20,28 @@ export default function LoginPage() {
         setError("");
         try {
             const res = await loginUser(email, password);
-            console.log("Login success:", res);
-            // ✅ Here you can redirect or save user info (e.g., to localStorage)
-            alert("Prijava uspešna!");
+            localStorage.setItem("user", JSON.stringify(res.user));
+            router.push("/")
         } catch (err: any) {
             setError(err.message);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleGoogleLogin = async () => {
+        try {
+            const {data, error} = await supabase.auth.signInWithOAuth({
+                provider: "google",
+                options: {
+                    redirectTo: "http://localhost:3000/",
+                },
+            });
+
+            if (error) throw error;
+        } catch (err) {
+            console.error("Google login error:", err);
+            alert("Napaka pri prijavi z Google!");
         }
     };
 
@@ -61,7 +81,8 @@ export default function LoginPage() {
                         {loading ? "Prijavljam..." : "Prijava"}
                     </button>
 
-                    <button className="w-full bg-transparent border border-gray-500 text-white p-2 rounded mt-3">
+                    <button onClick={handleGoogleLogin}
+                            className="w-full bg-transparent border border-gray-500 text-white p-2 rounded mt-3">
                         Prijavite se z Google
                     </button>
 
