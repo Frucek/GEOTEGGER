@@ -74,3 +74,26 @@ def login(user: UserLogin):
     db_user.pop("password_hash", None)
 
     return {"status": "success", "message": "Login successful", "user": db_user}
+
+
+class PasswordResetConfirmWithEmail(BaseModel):
+    email: str
+    new_password: str
+
+
+@router.post("/reset-password")
+def reset_password(data: PasswordResetConfirmWithEmail):
+    try:
+        # 1. Check if user exists
+        print("Resetting password for:", data.email)
+        res = supabase_clt.table("users").select("*").eq("email", data.email).execute()
+        if not res.data or len(res.data) == 0:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # 2. Hash and update new password
+        hashed_pw = hash_password(data.new_password)
+        supabase_clt.table("users").update({"password_hash": hashed_pw, "updated_at": datetime.utcnow().isoformat()}).eq("email", data.email).execute()
+
+        return {"status": "success", "message": "Password successfully reset"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
