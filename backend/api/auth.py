@@ -53,13 +53,13 @@ def register(user: UserRegister):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    #
 
 
 @router.post("/login")
 def login(user: UserLogin):
     # Get the user by email
-    response = supabase_clt.table("users").select("*").eq("email", user.email).execute()
+    response = supabase_clt.table("users").select(
+        "*").eq("email", user.email).execute()
 
     if not response.data or len(response.data) == 0:
         raise HTTPException(status_code=404, detail="User not found")
@@ -86,13 +86,15 @@ def reset_password(data: PasswordResetConfirmWithEmail):
     try:
         # 1. Check if user exists
         print("Resetting password for:", data.email)
-        res = supabase_clt.table("users").select("*").eq("email", data.email).execute()
+        res = supabase_clt.table("users").select(
+            "*").eq("email", data.email).execute()
         if not res.data or len(res.data) == 0:
             raise HTTPException(status_code=404, detail="User not found")
 
         # 2. Hash and update new password
         hashed_pw = hash_password(data.new_password)
-        supabase_clt.table("users").update({"password_hash": hashed_pw, "updated_at": datetime.utcnow().isoformat()}).eq("email", data.email).execute()
+        supabase_clt.table("users").update({"password_hash": hashed_pw, "updated_at": datetime.utcnow(
+        ).isoformat()}).eq("email", data.email).execute()
 
         return {"status": "success", "message": "Password successfully reset"}
     except Exception as e:

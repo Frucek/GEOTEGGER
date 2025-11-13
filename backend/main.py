@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 # from api import game
-from api import auth
+from api import auth, game
 
 app = FastAPI(title="Geotagger API")
 
@@ -13,7 +13,7 @@ app.add_middleware(
 )
 
 app.include_router(auth.router, prefix="/auth", tags=["Auth"])
-# app.include_router(game.router, prefix="/game", tags=["Game"])
+app.include_router(game.router, prefix="/games", tags=["Games"])
 
 
 @app.get("/")
