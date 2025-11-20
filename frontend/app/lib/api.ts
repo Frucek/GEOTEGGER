@@ -11,7 +11,7 @@ export function getAccessToken() {
 // Helper function to check if user is authenticated
 export function isAuthenticated() {
   if (typeof window !== "undefined") {
-    return !!localStorage.getItem("access_token");
+    return !!localStorage.getItem("user");
   }
   return false;
 }
@@ -19,8 +19,6 @@ export function isAuthenticated() {
 // Helper function to logout
 export function logout() {
   if (typeof window !== "undefined") {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
     localStorage.removeItem("user");
   }
 }

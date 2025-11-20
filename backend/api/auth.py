@@ -53,6 +53,7 @@ def register(user: UserRegister):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    #
 
 
 @router.post("/login")

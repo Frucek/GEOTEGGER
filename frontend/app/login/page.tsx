@@ -20,11 +20,23 @@ export default function LoginPage() {
     try {
       const res = await loginUser(email, password);
 
-      //localStorage.setItem("user", JSON.stringify(res.user));
-      //localStorage.setItem("access_token", res.access_token);
-      //localStorage.setItem("refresh_token", res.refresh_token);
-
+      // Store user info and tokens
       localStorage.setItem("user", JSON.stringify(res.user));
+      localStorage.setItem("access_token", res.access_token);
+      localStorage.setItem("refresh_token", res.refresh_token);
+
+      // Also set the Supabase session
+      if (res.access_token) {
+        const { data, error } = await supabase.auth.setSession({
+          access_token: res.access_token,
+          refresh_token: res.refresh_token,
+        });
+
+        if (error) {
+          console.error("Error setting Supabase session:", error);
+        }
+      }
+
       router.push("/");
     } catch (err: any) {
       setError(err.message);

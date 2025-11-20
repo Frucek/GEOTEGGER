@@ -1,11 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { LatLngLiteral } from "leaflet";
+import { useRouter } from "next/navigation";
 
 import Header from "@/app/components/Header";
 import MapPicker from "@/app/components/MapPicker";
-import { createGame } from "@/app/lib/api";
+import { createGame, isAuthenticated } from "@/app/lib/api";
 
 export default function NovaIgraPage() {
   const [location, setLocation] = useState<LatLngLiteral | null>(null);
@@ -16,6 +17,14 @@ export default function NovaIgraPage() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isAuthenticated()) {
+      router.replace("/login");
+    }
+  }, []);
 
   const handleSubmit: React.FormEventHandler<HTMLFormElement> = async (
     event

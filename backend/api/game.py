@@ -1,12 +1,9 @@
-from fastapi import Depends, HTTPException, status
 from uuid import uuid4
 from datetime import datetime
-from fastapi import HTTPException, UploadFile, File, Form, Depends
+from fastapi import HTTPException, UploadFile, File, Form, Depends, Request
 from supabase import Client
 from fastapi import APIRouter
 from core.config import supabase_clt
-from supabase import Client
-
 
 router = APIRouter()
 
@@ -15,8 +12,21 @@ def get_supabase() -> Client:
     return supabase_clt
 
 
-async def get_current_user(supabase: Client = Depends(get_supabase)):
+async def get_current_user(request: Request, supabase: Client = Depends(get_supabase)):
     try:
+        # Get the session from cookies
+        access_token = request.cookies.get("access_token")
+        refresh_token = request.cookies.get("refresh_token")
+
+        if not access_token:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Not authenticated",
+            )
+
+        # Set the session for Supabase client
+        supabase.auth.set_session(access_token, refresh_token)
+
         # Get the current user from Supabase auth
         user_response = supabase.auth.get_user()
 
@@ -26,7 +36,7 @@ async def get_current_user(supabase: Client = Depends(get_supabase)):
                 detail="Not authenticated",
             )
 
-        return user_response.user.id
+        return user_response.user
 
     except Exception as e:
         raise HTTPException(
@@ -37,10 +47,11 @@ async def get_current_user(supabase: Client = Depends(get_supabase)):
 
 @router.post("/", status_code=201)
 async def create_game(
+    request: Request,
     image: UploadFile = File(...),
     latitude: float = Form(...),
     longitude: float = Form(...),
-    current_user_id: int = 123  # Depends(get_current_user),
+    current_user=Depends(get_current_user),  # Now using the actual dependency
 ):
     try:
         # Validate file extension
@@ -70,6 +81,12 @@ async def create_game(
                 status_code=400, detail="Prejeta slika je prazna. Poskusite znova."
             )
 
+        # Set session for storage operations
+        access_token = request.cookies.get("access_token")
+        refresh_token = request.cookies.get("refresh_token")
+        if access_token:
+            supabase_clt.auth.set_session(access_token, refresh_token)
+
         # Upload to Supabase storage
         storage_client = supabase_clt.storage.from_("game-images")
 
@@ -97,10 +114,10 @@ async def create_game(
         # Prepare game data for database
         now = datetime.utcnow().isoformat()
         game_payload = {
-            "user_id": current_user_id,  # Use the current user's ID
-            "lat": latitude,  # Match your column name
-            "lon": longitude,  # Match your column name
-            "path": storage_path,  # Store the storage path
+            "user_id": current_user.id,  # Use the actual user ID from auth
+            "lat": latitude,
+            "lon": longitude,
+            "path": storage_path,
             "created_at": now,
         }
 
@@ -119,7 +136,7 @@ async def create_game(
             "status": "success",
             "game": {
                 **insert_response.data[0],
-                "image_url": image_url  # Include the public URL in response
+                "image_url": image_url
             }
         }
 

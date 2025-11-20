@@ -38,6 +38,9 @@ export default function Header() {
                 <Link href="/profil" className="hover:text-yellow-400 transition">
                     Profil
                 </Link>
+                <Link href="/new-game" className="hover:text-yellow-400 transition">
+                    Nova igra
+                </Link>
                 <button onClick={handleLogout}
                         className="hover:text-yellow-400 transition"
                 >
