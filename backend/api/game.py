@@ -1,3 +1,4 @@
+from pydantic import BaseModel
 from uuid import uuid4
 from datetime import datetime
 from fastapi import HTTPException, UploadFile, File, Form, Depends, Request
@@ -81,6 +82,20 @@ async def get_game_by_id(game_id: str):
             storage_client = supabase_clt.storage.from_("game-images")
             public_url = storage_client.get_public_url(game["path"])
             game["image_url"] = public_url
+
+        # Try to fetch the creator's email (if available) and include it
+        try:
+            user_id = game.get("user_id")
+            if user_id is not None:
+                user_resp = supabase_clt.table("users").select(
+                    "email").eq("id", user_id).limit(1).execute()
+                if getattr(user_resp, "data", None):
+                    user_row = user_resp.data[0]
+                    if user_row and user_row.get("email"):
+                        game["user_email"] = user_row.get("email")
+        except Exception:
+            # Don't fail the whole request if fetching user info fails
+            pass
 
         return game
 
@@ -182,6 +197,67 @@ async def create_game(
                 "image_url": image_url
             }
         }
+
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Return distance between two lat/lon points in meters using Haversine formula."""
+    from math import radians, sin, cos, sqrt, atan2
+
+    R = 6371000.0  # Earth radius in meters
+    phi1 = radians(lat1)
+    phi2 = radians(lat2)
+    dphi = radians(lat2 - lat1)
+    dlambda = radians(lon2 - lon1)
+
+    a = sin(dphi / 2.0) ** 2 + cos(phi1) * cos(phi2) * sin(dlambda / 2.0) ** 2
+    c = 2 * atan2(sqrt(a), sqrt(1 - a))
+    return R * c
+
+
+class CheckLocationRequest(BaseModel):
+    latitude: float
+    longitude: float
+
+
+@router.post("/{game_id}/check")
+async def check_game_location(game_id: str, payload: CheckLocationRequest):
+    """Check how close provided coordinates are to the stored game location.
+
+    Returns distance in meters.
+    """
+    try:
+        # Fetch game
+        response = (supabase_clt.table("games").select(
+            "*").eq("id", game_id).execute())
+        if hasattr(response, "error") and response.error:
+            raise HTTPException(
+                status_code=500, detail="Napaka pri pridobivanju igre iz podatkovne baze.")
+
+        if not response.data:
+            raise HTTPException(
+                status_code=404, detail="Igra ni bila najdena.")
+
+        game = response.data[0]
+
+        # Expect fields named lat and lon (or latitude/longitude fallback)
+        try:
+            game_lat = float(game.get("lat") if game.get(
+                "lat") is not None else game.get("latitude"))
+            game_lon = float(game.get("lon") if game.get(
+                "lon") is not None else game.get("longitude"))
+        except Exception:
+            raise HTTPException(
+                status_code=400, detail="Igra nima veljavnih koordinat.")
+
+        distance_m = haversine_distance(game_lat, game_lon, float(
+            payload.latitude), float(payload.longitude))
+
+        return {"distance_meters": distance_m, "game_lat": game_lat, "game_lon": game_lon}
 
     except HTTPException:
         raise

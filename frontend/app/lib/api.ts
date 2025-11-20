@@ -149,3 +149,33 @@ export async function fetchGames(limit = 12, offset = 0) {
 
   return response.json();
 }
+
+export async function fetchGameById(id: string) {
+  const response = await fetch(`${API_BASE_URL}/games/${id}`);
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.detail || "Napaka pri nalaganju igre");
+  }
+
+  return response.json();
+}
+
+export async function checkGameLocation(
+  gameId: string,
+  latitude: number,
+  longitude: number
+) {
+  const response = await fetch(`${API_BASE_URL}/games/${gameId}/check`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ latitude, longitude }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.detail || "Napaka pri preverjanju lokacije");
+  }
+
+  return response.json();
+}
