@@ -93,23 +93,38 @@ interface CreateGamePayload {
   description?: string;
 }
 
+export function getCurrentUserId(): string | null {
+  if (typeof window !== "undefined") {
+    const userStr = localStorage.getItem("user");
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        return user.id || null;
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+        return null;
+      }
+    }
+  }
+  return null;
+}
+
 export async function createGame(payload: CreateGamePayload) {
+  const userId = getCurrentUserId();
+  if (!userId) {
+    throw new Error("User not authenticated");
+  }
+
   const formData = new FormData();
   formData.append("image", payload.image);
   formData.append("latitude", String(payload.latitude));
   formData.append("longitude", String(payload.longitude));
 
-  // const token = localStorage.getItem("access_token");
-  // if (!token) {
-  //   throw new Error("No access token found");
-  // }
+  formData.append("user_id", userId);
 
   const response = await fetch(`${API_BASE_URL}/games`, {
     method: "POST",
     body: formData,
-    //headers: {
-    //  Authorization: `Bearer ${token}`,
-    //},
   });
 
   if (!response.ok) {

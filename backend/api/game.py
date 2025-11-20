@@ -12,46 +12,13 @@ def get_supabase() -> Client:
     return supabase_clt
 
 
-async def get_current_user(request: Request, supabase: Client = Depends(get_supabase)):
-    try:
-        # Get the session from cookies
-        access_token = request.cookies.get("access_token")
-        refresh_token = request.cookies.get("refresh_token")
-
-        if not access_token:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not authenticated",
-            )
-
-        # Set the session for Supabase client
-        supabase.auth.set_session(access_token, refresh_token)
-
-        # Get the current user from Supabase auth
-        user_response = supabase.auth.get_user()
-
-        if user_response.user is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not authenticated",
-            )
-
-        return user_response.user
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-        )
-
-
 @router.post("/", status_code=201)
 async def create_game(
     request: Request,
     image: UploadFile = File(...),
     latitude: float = Form(...),
     longitude: float = Form(...),
-    current_user=Depends(get_current_user),  # Now using the actual dependency
+    user_id: str = Form(...),
 ):
     try:
         # Validate file extension
@@ -81,12 +48,6 @@ async def create_game(
                 status_code=400, detail="Prejeta slika je prazna. Poskusite znova."
             )
 
-        # Set session for storage operations
-        access_token = request.cookies.get("access_token")
-        refresh_token = request.cookies.get("refresh_token")
-        if access_token:
-            supabase_clt.auth.set_session(access_token, refresh_token)
-
         # Upload to Supabase storage
         storage_client = supabase_clt.storage.from_("game-images")
 
@@ -114,7 +75,7 @@ async def create_game(
         # Prepare game data for database
         now = datetime.utcnow().isoformat()
         game_payload = {
-            "user_id": current_user.id,  # Use the actual user ID from auth
+            "user_id": user_id,
             "lat": latitude,
             "lon": longitude,
             "path": storage_path,
