@@ -90,6 +90,24 @@ export default function NovaIgraPage() {
         >
           <div className="flex flex-col gap-2">
             <label
+              htmlFor="title"
+              className="text-sm font-semibold text-slate-700"
+            >
+              Naslov igre
+            </label>
+            <input
+              id="title"
+              name="title"
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Vnesite naslov (ni obvezno)"
+              className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label
               htmlFor="image"
               className="text-sm font-semibold text-slate-700"
             >

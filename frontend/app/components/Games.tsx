@@ -68,27 +68,8 @@ export default function Games() {
 
               <div className="p-4 flex flex-col gap-2">
                 <p className="text-sm text-slate-500">
-                  ID: <span className="font-semibold">{game.id}</span>
+                  <span className="font-semibold">{game.title}</span>
                 </p>
-
-                <p className="text-sm text-slate-500">
-                  Uporabnik:{" "}
-                  <span className="font-semibold">{game.user_id}</span>
-                </p>
-
-                <p className="text-sm text-slate-500">
-                  Lokacija:
-                  <span className="font-semibold">
-                    {" "}
-                    {parseFloat(game.lat).toFixed(4)}
-                  </span>
-                  ,
-                  <span className="font-semibold">
-                    {" "}
-                    {parseFloat(game.lon).toFixed(4)}
-                  </span>
-                </p>
-
                 <p className="text-xs text-slate-400">
                   {new Date(game.created_at).toLocaleDateString("sl-SI")}
                 </p>

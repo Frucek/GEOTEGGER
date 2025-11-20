@@ -120,6 +120,7 @@ export async function createGame(payload: CreateGamePayload) {
   formData.append("latitude", String(payload.latitude));
   formData.append("longitude", String(payload.longitude));
 
+  formData.append("title", String(payload.title));
   formData.append("user_id", userId);
 
   const response = await fetch(`${API_BASE_URL}/games`, {

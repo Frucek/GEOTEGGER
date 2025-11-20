@@ -98,6 +98,7 @@ async def create_game(
     image: UploadFile = File(...),
     latitude: float = Form(...),
     longitude: float = Form(...),
+    title: str = Form(...),
     user_id: str = Form(...),
 ):
     try:
@@ -156,6 +157,7 @@ async def create_game(
         now = datetime.utcnow().isoformat()
         game_payload = {
             "user_id": user_id,
+            "title": title,
             "lat": latitude,
             "lon": longitude,
             "path": storage_path,
