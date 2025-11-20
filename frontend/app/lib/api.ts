@@ -136,3 +136,15 @@ export async function createGame(payload: CreateGamePayload) {
 
   return response.json();
 }
+
+export async function fetchGames(limit = 12, offset = 0) {
+  const response = await fetch(
+    `${API_BASE_URL}/games?limit=${limit}&offset=${offset}`
+  );
+
+  if (!response.ok) {
+    throw new Error("Napaka pri nalaganju iger");
+  }
+
+  return response.json();
+}

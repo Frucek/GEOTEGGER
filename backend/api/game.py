@@ -4,12 +4,92 @@ from fastapi import HTTPException, UploadFile, File, Form, Depends, Request
 from supabase import Client
 from fastapi import APIRouter
 from core.config import supabase_clt
+from typing import List, Optional
 
 router = APIRouter()
 
 
 def get_supabase() -> Client:
     return supabase_clt
+
+
+@router.get("/", response_model=List[dict])
+async def get_all_games(
+    limit: Optional[int] = 100,
+    offset: Optional[int] = 0
+):
+    """
+    Get all created games with pagination
+    """
+    try:
+        # Get games from database with pagination
+        response = (supabase_clt.table("games")
+                    .select("*")
+                    .order("created_at", desc=True)
+                    .range(offset, offset + limit - 1)
+                    .execute())
+
+        if hasattr(response, 'error') and response.error:
+            raise HTTPException(
+                status_code=500,
+                detail="Napaka pri pridobivanju iger iz podatkovne baze."
+            )
+
+        games = response.data
+
+        # Get public URLs for all images
+        storage_client = supabase_clt.storage.from_("game-images")
+
+        for game in games:
+            if game.get("path"):
+                public_url = storage_client.get_public_url(game["path"])
+                game["image_url"] = public_url
+
+        return games
+
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@router.get("/{game_id}")
+async def get_game_by_id(game_id: str):
+    """
+    Get a specific game by ID
+    """
+    try:
+        response = (supabase_clt.table("games")
+                    .select("*")
+                    .eq("id", game_id)
+                    .execute())
+
+        if hasattr(response, 'error') and response.error:
+            raise HTTPException(
+                status_code=500,
+                detail="Napaka pri pridobivanju igre iz podatkovne baze."
+            )
+
+        if not response.data:
+            raise HTTPException(
+                status_code=404,
+                detail="Igra ni bila najdena."
+            )
+
+        game = response.data[0]
+
+        # Get public URL for the image
+        if game.get("path"):
+            storage_client = supabase_clt.storage.from_("game-images")
+            public_url = storage_client.get_public_url(game["path"])
+            game["image_url"] = public_url
+
+        return game
+
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+# Your existing create_game endpoint remains the same
 
 
 @router.post("/", status_code=201)
