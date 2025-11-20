@@ -44,7 +44,7 @@ export default function Games() {
   }
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-10">
+    <main className="mx-auto max-w-7xl px-10 py-16">
       <h1 className="text-3xl font-bold text-slate-900 mb-8">Igre</h1>
 
       {games.length === 0 ? (

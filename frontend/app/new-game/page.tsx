@@ -102,7 +102,7 @@ export default function NovaIgraPage() {
   return (
     <>
       <Header />
-      <main className="mx-auto max-w-7xl px-6 py-12">
+      <main className="mx-auto max-w-7xl px-10 py-16">
         <div className="mb-8">
           <h1 className="text-3xl font-extrabold text-slate-900">Nova igra</h1>
           <p className="mt-2 text-slate-600 max-w-2xl">
