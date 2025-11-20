@@ -164,17 +164,50 @@ export async function fetchGameById(id: string) {
 export async function checkGameLocation(
   gameId: string,
   latitude: number,
-  longitude: number
+  longitude: number,
+  userId?: string | null
 ) {
+  const body: any = { latitude, longitude };
+  if (userId) body.user_id = userId;
+  else body.user_id = null;
+  // Ensure user_id is a string per backend validation
+  if (body.user_id !== null && body.user_id !== undefined) {
+    body.user_id = String(body.user_id);
+  }
+
   const response = await fetch(`${API_BASE_URL}/games/${gameId}/check`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ latitude, longitude }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
-    throw new Error(err.detail || "Napaka pri preverjanju lokacije");
+    // Normalize error message from different backend shapes
+    let msg = "Napaka pri preverjanju lokacije";
+    try {
+      if (!err) {
+        msg = "Napaka pri preverjanju lokacije";
+      } else if (typeof err === "string") {
+        msg = err;
+      } else if (err.detail) {
+        msg =
+          typeof err.detail === "string"
+            ? err.detail
+            : JSON.stringify(err.detail);
+      } else if (err.message) {
+        msg =
+          typeof err.message === "string"
+            ? err.message
+            : JSON.stringify(err.message);
+      } else {
+        msg = JSON.stringify(err);
+      }
+    } catch (e) {
+      msg = "Napaka pri preverjanju lokacije";
+    }
+
+    throw new Error(msg);
   }
 
   return response.json();

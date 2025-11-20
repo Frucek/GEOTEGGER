@@ -222,13 +222,39 @@ def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
 class CheckLocationRequest(BaseModel):
     latitude: float
     longitude: float
+    user_id: Optional[str] = None
+
+
+def calculate_points(distance_m: float) -> int:
+    """Tiered points based on proximity (meters).
+
+    More generous tiers: grants higher points for very close matches and
+    expands the radii so players can earn points from a larger area.
+    """
+    # Triple the radii to be even more generous per request.
+    # Extremely accurate (within 150m) -> 200 points (50 * 3)
+    if distance_m <= 150:
+        return 200
+    # Very close (within 450m) -> 150 points (150 * 3)
+    if distance_m <= 450:
+        return 150
+    # Close (within 1200m) -> 80 points (400 * 3)
+    if distance_m <= 1200:
+        return 80
+    # Near (within 2700m) -> 40 points (900 * 3)
+    if distance_m <= 2700:
+        return 40
+    # Wider award radius: within 7500m -> 15 points (2500 * 3)
+    if distance_m <= 7500:
+        return 15
+    return 0
 
 
 @router.post("/{game_id}/check")
 async def check_game_location(game_id: str, payload: CheckLocationRequest):
     """Check how close provided coordinates are to the stored game location.
 
-    Returns distance in meters.
+    Returns distance in meters and (optionally) awards points to the provided user.
     """
     try:
         # Fetch game
@@ -257,7 +283,35 @@ async def check_game_location(game_id: str, payload: CheckLocationRequest):
         distance_m = haversine_distance(game_lat, game_lon, float(
             payload.latitude), float(payload.longitude))
 
-        return {"distance_meters": distance_m, "game_lat": game_lat, "game_lon": game_lon}
+        points_awarded = calculate_points(distance_m)
+        total_points = None
+
+        # If user_id provided, update user's points column (adds to existing points)
+        if payload.user_id:
+            try:
+                user_resp = supabase_clt.table("users").select(
+                    "points").eq("id", payload.user_id).limit(1).execute()
+                if getattr(user_resp, "data", None):
+                    user_row = user_resp.data[0]
+                    current_points = user_row.get("points") or 0
+                else:
+                    current_points = 0
+
+                new_total = (current_points or 0) + points_awarded
+                upd = supabase_clt.table("users").update(
+                    {"points": new_total}).eq("id", payload.user_id).execute()
+                total_points = new_total
+            except Exception:
+                # don't fail the whole request if updating points fails
+                total_points = None
+
+        return {
+            "distance_meters": distance_m,
+            "game_lat": game_lat,
+            "game_lon": game_lon,
+            "points_awarded": points_awarded,
+            "total_points": total_points,
+        }
 
     except HTTPException:
         raise

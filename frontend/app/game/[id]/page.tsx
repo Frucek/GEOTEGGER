@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import ClientGameFallback from "./ClientGameFallback";
+import Header from "@/app/components/Header";
 
 const API_BASE = process.env.BACKEND || "http://127.0.0.1:8000";
 
@@ -83,48 +84,53 @@ export default async function GamePage({
     .replace("supabase.co//", "supabase.co/");
 
   return (
-    <main className="mx-auto max-w-4xl px-4 py-10">
-      <Link href="/" className="text-sm text-slate-500 mb-4 inline-block">
-        ← Nazaj
-      </Link>
+    <>
+      <Header />
+      <main className="mx-auto max-w-4xl px-4 py-10">
+        <Link href="/" className="text-sm text-slate-500 mb-4 inline-block">
+          ← Nazaj
+        </Link>
 
-      <div className="rounded-2xl overflow-hidden shadow-md border border-slate-200 bg-white">
-        {imageUrl ? (
-          <div className="relative h-80 w-full">
-            <Image
-              src={imageUrl}
-              alt={game.title || "Game image"}
-              fill
-              className="object-cover"
-            />
-          </div>
-        ) : null}
-
-        <div className="p-6">
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">
-            {game.title}
-          </h1>
-          <p className="text-xs text-slate-400 mb-4">
-            {game.created_at
-              ? new Date(game.created_at).toLocaleString("sl-SI")
-              : "Datum ni na voljo"}
-          </p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-slate-600 font-semibold">Ustvaril</p>
-              <p className="text-sm text-slate-500">Uporabnik: {displayName}</p>
-            </div>
-          </div>
-
-          {game.description ? (
-            <div className="mt-6">
-              <p className="text-sm text-slate-600 font-semibold">Opis</p>
-              <p className="text-sm text-slate-500">{game.description}</p>
+        <div className="rounded-2xl overflow-hidden shadow-md border border-slate-200 bg-white">
+          {imageUrl ? (
+            <div className="relative h-80 w-full">
+              <Image
+                src={imageUrl}
+                alt={game.title || "Game image"}
+                fill
+                className="object-cover"
+              />
             </div>
           ) : null}
+
+          <div className="p-6">
+            <h1 className="text-2xl font-bold text-slate-900 mb-2">
+              {game.title}
+            </h1>
+            <p className="text-xs text-slate-400 mb-4">
+              {game.created_at
+                ? new Date(game.created_at).toLocaleString("sl-SI")
+                : "Datum ni na voljo"}
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-slate-600 font-semibold">Ustvaril</p>
+                <p className="text-sm text-slate-500">
+                  Uporabnik: {displayName}
+                </p>
+              </div>
+            </div>
+
+            {game.description ? (
+              <div className="mt-6">
+                <p className="text-sm text-slate-600 font-semibold">Opis</p>
+                <p className="text-sm text-slate-500">{game.description}</p>
+              </div>
+            ) : null}
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </>
   );
 }
